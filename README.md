@@ -36,7 +36,7 @@ python train.py -wp myproject -we myentity -d fashion_mnist -e 10 -b 32 -l cross
 ```
 ## Results
 The training process was tracked using Weights and Biases (wandb), allowing us to monitor various metrics such as training loss, training accuracy, validation loss, and validation accuracy. Through the sweep, I identified the best combination of hyperparameters that maximized the validation accuracy.<br>
-Wandb Report Link :- https://wandb.ai/cs23m063/deep_learn_assignment_1/reports/CS6910-Assignment-1--Vmlldzo3MDg4NDQ2
+Wandb Report Link :- https://api.wandb.ai/links/cs23m063/idiqocdj
 
 ## Conclusion
 Through rigorous experimentation and hyperparameter tuning, I successfully trained neural networks with optimal configurations to classify fashion items with high accuracy. This assignment demonstrates the importance of hyperparameter optimization in achieving optimal performance in deep learning tasks.
