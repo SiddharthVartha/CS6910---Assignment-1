@@ -326,7 +326,6 @@ def nesterov_gradient_descent(eta, batch_size, epoch, theta, beta, activation_fu
 
 # RMS_Prop
 def rmsprop(eta, batch_size, epoch, theta, beta, eps, activation_func, validation_split, loss_type, alpha,no_of_hidden_layers):
-    # Initialize first  moment estimates
     v_theta = [np.zeros_like(param) for param in theta]
 
     for itr in range(epoch):
@@ -366,7 +365,6 @@ def rmsprop(eta, batch_size, epoch, theta, beta, eps, activation_func, validatio
 
 # Adam Optimizer
 def adam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation_func, validation_split, loss_type, alpha,no_of_hidden_layers):
-    # Initialize first and second moment estimates
     m_theta = [np.zeros_like(param) for param in theta]
     v_theta = [np.zeros_like(param) for param in theta]
 
@@ -411,7 +409,6 @@ def adam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation_
 
 # nadam Optimizer
 def nadam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation_func, validation_split, loss_type, alpha ,no_of_hidden_layers):
-    # Initialize first and second moment estimates
     m_theta = [np.zeros_like(param) for param in theta]
     v_theta = [np.zeros_like(param) for param in theta]
 
@@ -458,7 +455,7 @@ def run_optimizer(eta, batch_size, epoch, theta, momentum, beta, beta1, beta2, e
       gradient_descent(eta,1,epoch,theta,activation_func,validation_split,loss_type,alpha,no_of_hidden_layers)
     elif(optimizer=="momentum"):
       momentum_gradient_descent(eta,batch_size,epoch,theta,momentum,activation_func,validation_split,loss_type,alpha,no_of_hidden_layers)
-    elif(optimizer=="nestrov"):
+    elif(optimizer=="nag"):
       nesterov_gradient_descent(eta,batch_size,epoch,theta,momentum,activation_func,validation_split,loss_type,alpha,no_of_hidden_layers)
     elif(optimizer=="rmsprop"):
       rmsprop(eta,batch_size,epoch,theta,beta,eps,activation_func,validation_split,loss_type,alpha,no_of_hidden_layers)
