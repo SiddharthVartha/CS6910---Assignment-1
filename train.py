@@ -1,11 +1,11 @@
-import wandb
-wandb.login()
 import numpy as np
-import argparse
-from keras.datasets import fashion_mnist
-from keras.datasets import mnist
+from sklearn.metrics import confusion_matrix
+from keras.datasets import fashion_mnist,mnist
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import argparse
+import wandb
+wandb.login()
 # Load Fashion MNIST dataset
 (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
 x_train = x_train / 255.0
@@ -106,9 +106,14 @@ def calc_gdash(ak,activationFunc):
   gdshNew=gdsh.reshape((len(gdsh),1))
   return gdshNew
 
-def calc_aL(aL,y):
-  aL[y][0]=-(1-aL[y][0])
-  return aL
+def calc_aL(aL,y,loss_type):
+  if(loss_type=="cross_entropy"):
+    aL[y][0]=-(1-aL[y][0])
+    return aL
+  elif(loss_type=="mean_squared_error"):
+    Y=np.zeros_like(aL)
+    Y[y][0]=1
+    return np.multiply(-2*(aL-Y),np.multiply(aL,(1-aL)))
 
 # Calculate softmax
 def calc_softmax(a):
@@ -142,6 +147,7 @@ def calc_loss(yhat, actual, loss_type):
           else:
             sum+=yhat[i][0]**2
         return  sum/10
+
     elif loss_type == "cross_entropy":
         prediction=yhat[actual][0]
         if(not prediction):
@@ -159,8 +165,8 @@ def calc_loss_acc(theta,validation_split,activation_func,loss_type,no_of_hidden_
             if prediction == y_train[i]:
                 correct += 1
             loss += calc_loss(a_h_list[-1], y_train[i], loss_type)
-        sumW = sum([np.sum(theta[i]**2) for i in range(no_of_hidden_layers+1)]) 
-        regularization_term = (alpha / 2) * sumW  
+        sumW = sum([np.sum(theta[i]**2) for i in range(no_of_hidden_layers+1)])
+        regularization_term = (alpha / 2) * sumW
         accuracy = correct / total
         loss = (loss + regularization_term) / total
         return accuracy,loss
@@ -172,12 +178,12 @@ def calc_loss_acc(theta,validation_split,activation_func,loss_type,no_of_hidden_
                 correct += 1
             loss += calc_loss(a_h_list[-1], y_train[i], loss_type)
         sumW=sum([np.sum(theta[i]**2) for i in range(no_of_hidden_layers+1)])
-        regularization_term = (alpha / 2) * sumW  
+        regularization_term = (alpha / 2) * sumW
         accuracy = correct / (60000-total)
-        loss = (loss + regularization_term) /(60000-total)
+        loss = (loss + regularization_term) / (60000-total)
         return accuracy,loss
       elif(which_loss=="test"):
-        classes=["T-shirt/top","Trouser","Pullover","Dress","Coat","Sandal","Shirt", "Sneaker","Bag", "Ankle boot"]    
+        classes=["T-shirt/top","Trouser","Pullover","Dress","Coat","Sandal","Shirt", "Sneaker","Bag", "Ankle boot"]
         y_true=[]
         y_pred=[]
         for i in range(10000):
@@ -185,17 +191,17 @@ def calc_loss_acc(theta,validation_split,activation_func,loss_type,no_of_hidden_
           prediction = np.argmax(a_h_list[-1])
           if prediction == y_test[i]:
               correct += 1
-          loss += calc_loss(a_h_list[-1], y_test[i], loss_type) 
+          loss += calc_loss(a_h_list[-1], y_test[i], loss_type)
           y_true.append(classes[y_test[i]])
           y_pred.append(classes[prediction])
         accuracy = correct /10000
         loss = loss / 10000
-        return accuracy,loss,y_true,y_pred  
+        return accuracy,loss,y_true,y_pred
 
 # Back propagation
-def back_propagation(a_h_list, y, inp, del_theta, theta, batch_size, activation_func,no_of_hidden_layers):
+def back_propagation(a_h_list, y, inp, del_theta, theta, batch_size, activation_func,no_of_hidden_layers,loss_type):
     h_counter = len(a_h_list) - 1
-    grad_a = calc_aL(a_h_list[h_counter],y)
+    grad_a = calc_aL(a_h_list[h_counter],y,loss_type)
     h_counter -= 2
     for i in range(no_of_hidden_layers, -1, -1):
         if i == 0:
@@ -221,10 +227,10 @@ def gradient_descent(eta, batch_size, epoch, theta, activation_func, validation_
         # Iterate through the training data
         for i in tqdm(range(int(60000 * (1 - validation_split)))):
             # Forward propagation
-            a_h_list = forward_propagation(theta, (x_train[i].flatten().reshape((784, 1))), activation_func,no_of_hidden_layers)
+            a_h_list = forward_propagation(theta, np.float64(x_train[i].flatten().reshape((784, 1))), activation_func,no_of_hidden_layers)
 
             # Backpropagation
-            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers)
+            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers,loss_type)
 
             # Update weights after every mini-batch
             if i % batch_size == 0 and i != 0:
@@ -261,7 +267,7 @@ def momentum_gradient_descent(eta, batch_size, epoch, theta, beta, activation_fu
             a_h_list = forward_propagation(theta, np.float64(x_train[i].flatten().reshape((784, 1))), activation_func,no_of_hidden_layers)
 
             # Backpropagation
-            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers)
+            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers,loss_type)
 
             # Update weights using momentum
             if i % batch_size == 0 and i != 0:
@@ -269,7 +275,7 @@ def momentum_gradient_descent(eta, batch_size, epoch, theta, beta, activation_fu
                     if(j<=no_of_hidden_layers):
                       del_theta[j] = (del_theta[j] / batch_size)
                     prev_history[j] = np.add(beta * prev_history[j],eta * (del_theta[j]))
-                    theta[j] = np.subtract(theta[j], eta * prev_history[j])-eta*alpha*theta[j]
+                    theta[j] = np.subtract(theta[j],  prev_history[j])-eta*alpha*theta[j]
                     del_theta[j] = del_theta[j] * 0
 
         # Calculate loss and accuracy
@@ -301,7 +307,7 @@ def nesterov_gradient_descent(eta, batch_size, epoch, theta, beta, activation_fu
             a_h_list = forward_propagation(updated_theta, np.float64(x_train[i].flatten().reshape((784, 1))), activation_func,no_of_hidden_layers)
 
             # Backpropagation
-            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, updated_theta, batch_size, activation_func,no_of_hidden_layers)
+            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, updated_theta, batch_size, activation_func,no_of_hidden_layers,loss_type)
 
             # Update weights using momentum
             if i % batch_size == 0 and i != 0:
@@ -326,6 +332,7 @@ def nesterov_gradient_descent(eta, batch_size, epoch, theta, beta, activation_fu
 
 # RMS_Prop
 def rmsprop(eta, batch_size, epoch, theta, beta, eps, activation_func, validation_split, loss_type, alpha,no_of_hidden_layers):
+    # Initialize first  moment estimates
     v_theta = [np.zeros_like(param) for param in theta]
 
     for itr in range(epoch):
@@ -337,7 +344,7 @@ def rmsprop(eta, batch_size, epoch, theta, beta, eps, activation_func, validatio
             a_h_list = forward_propagation(theta, np.float64(x_train[i].flatten().reshape((784, 1))), activation_func,no_of_hidden_layers)
 
             # Backpropagation
-            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers)
+            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers,loss_type)
 
             # Update weights using Adam optimizer
             if i % batch_size == 0 and i != 0:
@@ -365,6 +372,7 @@ def rmsprop(eta, batch_size, epoch, theta, beta, eps, activation_func, validatio
 
 # Adam Optimizer
 def adam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation_func, validation_split, loss_type, alpha,no_of_hidden_layers):
+    # Initialize first and second moment estimates
     m_theta = [np.zeros_like(param) for param in theta]
     v_theta = [np.zeros_like(param) for param in theta]
 
@@ -377,7 +385,7 @@ def adam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation_
             a_h_list = forward_propagation(theta, np.float64(x_train[i].flatten().reshape((784, 1))), activation_func,no_of_hidden_layers)
 
             # Backpropagation
-            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers)
+            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers,loss_type)
 
             # Update weights using Adam optimizer
             if i % batch_size == 0 and i != 0:
@@ -409,6 +417,7 @@ def adam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation_
 
 # nadam Optimizer
 def nadam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation_func, validation_split, loss_type, alpha ,no_of_hidden_layers):
+    # Initialize first and second moment estimates
     m_theta = [np.zeros_like(param) for param in theta]
     v_theta = [np.zeros_like(param) for param in theta]
 
@@ -421,7 +430,7 @@ def nadam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation
             a_h_list = forward_propagation(theta, np.float64(x_train[i].flatten().reshape((784, 1))), activation_func,no_of_hidden_layers)
 
             # Backpropagation
-            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers)
+            back_propagation(a_h_list, y_train[i], np.float64((x_train[i].flatten()).reshape((784, 1))), del_theta, theta, batch_size, activation_func,no_of_hidden_layers,loss_type)
 
             # Update weights using Adam optimizer
             if i % batch_size == 0 and i != 0:
@@ -450,6 +459,35 @@ def nadam_optimizer(eta, batch_size, epoch, theta, beta1, beta2, eps, activation
           'val_loss': validation_loss,
           'val_accuracy': validation_accuracy
       })
+
+def plotConfusionMatrix(theta,activation_func,loss_type,no_of_hidden_layers,which_loss,alpha=0):
+    classes=["T-shirt/top","Trouser","Pullover","Dress","Coat","Sandal","Shirt", "Sneaker","Bag", "Ankle boot"]
+    accuracy,loss,y_true,y_pred=calc_loss_acc(theta,0,activation_func,loss_type,no_of_hidden_layers,which_loss,0)
+    print(accuracy,loss)
+    cm = confusion_matrix(y_true, y_pred)
+
+    # Plot confusion matrix
+    plt.figure(figsize=(10, 8))
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title('Confusion Matrix')
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, format(cm[i, j], 'd'),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+    wandb.log({"confusion_matrix": plt})
+    plt.show()
+
 def run_optimizer(eta, batch_size, epoch, theta, momentum, beta, beta1, beta2, eps, activation_func, validation_split, loss_type, alpha,optimizer,no_of_hidden_layers):
     if(optimizer=="sgd"):
       gradient_descent(eta,1,epoch,theta,activation_func,validation_split,loss_type,alpha,no_of_hidden_layers)
