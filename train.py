@@ -107,14 +107,14 @@ def calc_gdash(ak,activationFunc):
   gdshNew=gdsh.reshape((len(gdsh),1))
   return gdshNew
 
-def calc_aL(aL,y,loss_type):
+def calc_aL(pred,y,loss_type):
   if(loss_type=="cross_entropy"):
-    aL[y][0]=-(1-aL[y][0])
-    return aL
+    pred[y][0]=-(1-pred[y][0])
+    return pred
   elif(loss_type=="mean_squared_error"):
-    Y=np.zeros_like(aL)
+    Y=np.zeros_like(pred)
     Y[y][0]=1
-    return np.multiply(-2*(aL-Y),np.multiply(aL,(1-aL)))
+    return np.multiply(2*(pred-Y),np.multiply(pred,(1-pred)))
 
 # Calculate softmax
 def calc_softmax(a):
