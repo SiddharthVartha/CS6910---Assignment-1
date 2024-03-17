@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from keras.datasets import fashion_mnist,mnist
+from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
@@ -573,6 +574,8 @@ if args.dataset == 'mnist':
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
 elif args.dataset == 'fashion_mnist' or args.dataset == None:
     (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+x_train,y_train=shuffle(x_train,y_train)
+x_test, y_test=shuffle(x_test, y_test)
 x_train=x_train/255.0
 x_test=x_test/255.0	
 validation_split=0.1	
