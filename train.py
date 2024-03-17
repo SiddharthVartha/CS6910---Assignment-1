@@ -569,7 +569,7 @@ def parse_arguments():
 
 args = parse_arguments() 	
 # Initialize wandb
-wandb.init(project=args.wandb_project)
+wandb.init(project=args.wandb_project, entity=args.wandb_entity)
 if args.dataset == 'mnist':
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
 elif args.dataset == 'fashion_mnist' or args.dataset == None:
